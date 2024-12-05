@@ -5,13 +5,14 @@ import cors from 'cors'
 import dotenv from 'dotenv';
 import OpenAI from "openai";
 import PdfParse from 'pdf-parse';
-import fs from 'fs'
+
 
 dotenv.config();
 const app = express()
-const storage = multer.memoryStorage();
 
-const upload = multer({ dest: '/uploads' })
+const storage = multer.memoryStorage();  
+const upload = multer({ storage: storage });
+
 app.use(cors());
 app.get('/', (req, res) => {
     res.send('Welcome to the API server!');
@@ -21,20 +22,17 @@ const openai = new OpenAI({
     apiKey:process.env.OpenAI_API_KEY,
 });
 
-async function extractText (pdfPath) {
-            const file = fs.readFileSync(pdfPath)
-            const parse = await PdfParse(file)
-            return parse.text
+async function extractText (buffer) {
+    const parse = await PdfParse(buffer);  // Directly parse the buffer
+    return parse.text;
 }
 
-app.post('/api/generateCoverLetter',upload.single('resume'),async (req,res)=>{
-    const jobDescription = req.body.jobDescription
-    const resume = await extractText(req.file.path)
-
-
+app.post('/api/generateCoverLetter', upload.single('resume'), async (req, res) => {
+    const jobDescription = req.body.jobDescription;
+    const resume = await extractText(req.file.buffer);
    
     // console.log(jobDescription)
-    // console.log(resume)
+    console.log(req.file)
     
     try {
         const completion = await openai.chat.completions.create({
@@ -62,19 +60,19 @@ app.post('/api/generateCoverLetter',upload.single('resume'),async (req,res)=>{
             ]
         })
         const responseData = completion.choices[0].message.content
-        console.log(responseData)
+        // console.log(responseData)
          res.send(responseData)
-    } catch (error) {
-        console.error('Error with OpenAI request:', error);
-    res.status(500).json({ error: 'Error generating cover letter' });
-    }
-    
+        } catch (error) {
+            console.error('Error with OpenAI request:', error);
+            console.error(error.stack);  // Log the full error stack trace
+            res.status(500).json({ error: 'Error generating cover letter' });
+        }
 })
 
 
 
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
