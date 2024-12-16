@@ -5,7 +5,7 @@ const router = express.Router();
 
 
 router.post('/generatepdf', async (req, res) => {
-    // console.log(req.body.coverLetter)
+    console.log(req.body.resumeHtml)
     let html
     if (req.body.coverLetter) {
       html = `
@@ -27,10 +27,10 @@ router.post('/generatepdf', async (req, res) => {
               </body>
           </html>
       `;
-  } else if (req.body.result) {
+  } else if (req.body.resumeHtml) {
       html = `
         
-              ${req.body.result}
+              ${req.body.resumeHtml}
              
       `;
   } 
