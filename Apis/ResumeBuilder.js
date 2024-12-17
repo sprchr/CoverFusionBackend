@@ -3,7 +3,7 @@ import multer from "multer";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 import pdfParse from "pdf-parse";
-import KafkaConfig from "../kfaka/config.js";
+import { decode, encode } from "gpt-3-encoder";
 dotenv.config();
 const upload = multer(); // Initialize multer for file uploads
 const router = express.Router();
@@ -11,127 +11,170 @@ const router = express.Router();
 const openai = new OpenAI({
   apiKey: process.env.OpenAI_API_KEY,
 });
+
+
+function mergeArraysByField(arr1, arr2, field) {
+  const map = new Map();
+  [...arr1, ...arr2].forEach(item => {
+    if (item[field]) map.set(item[field], item);
+  });
+  return Array.from(map.values());
+}
+
+// Function to split text into chunks
+function splitTextByTokens(text, maxTokens) {
+  const tokens = encode(text); // Convert text into tokens
+  const chunks = [];
+  let start = 0;
+
+  // Split tokens into chunks of maxTokens size
+  while (start < tokens.length) {
+    const end = Math.min(start + maxTokens, tokens.length);
+    const chunk = tokens.slice(start, end); // Extract chunk
+    chunks.push(decode(chunk));
+    start = end; // Move to the next chunk
+  }
+
+  // Decode token chunks back into text
+  return chunks
+}
+function mergeJson(current, updated) {
+
+  return {
+    header: {
+      name: current.header.name || updated.header?.name || "",
+      title: current.header.title || updated.header?.title || "",
+      email: current.header.email || updated.header?.email || "",
+      phone: current.header.phone || updated.header?.phone || "",
+      linkedin: current.header.linkedin || updated.header?.linkedin || "",
+      github: current.header.github || updated.header?.github || "",
+      address: current.header.address || updated.header?.address || "",
+    },
+    summary: current.summary || updated.summary,
+    skills: Array.from(new Set([...current.skills, ...(updated.skills || [])])),
+    education: mergeArraysByField(current.education, updated.education, "degree"),
+    experience: mergeArraysByField(current.experience, updated.experience, "title"),
+    projects: mergeArraysByField(current.projects, updated.projects, "title"),
+    certifications: Array.from(new Set([...current.certifications, ...(updated.certifications || [])])),
+    achievements: Array.from(new Set([...current.achievements, ...(updated.achievements || [])])),
+    hobbies: current.hobbies || updated.hobbies,
+    languages: Array.from(new Set([...current.languages, ...(updated.languages || [])])),
+    volunteer: current.volunteer || updated.volunteer,
+  };
+}
+
+
 router.post("/resumeBuild", upload.single("resume"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
   try {
-    // Step 1: Parse PDF and divide into chunks
+    // Parse the uploaded PDF
     const pdfData = await pdfParse(req.file.buffer);
     const fileContent = pdfData.text;
-    const chunkSize = 3000; // Keep chunks small to avoid OpenAI token limits
-    const chunks = fileContent.match(new RegExp(`.{1,${chunkSize}}`, "g")) || [];
 
-    // Step 2: Send chunks to Kafka
-    const kafkaConfig = new KafkaConfig();
-    const messages = chunks.map((chunk, index) => ({
-      key: `chunk-${index}`,
-      value: chunk,
-    }));
-    await kafkaConfig.producer("resume-topic", messages);
+    // Split the text into manageable chunks
+    const chunks = splitTextByTokens(fileContent, 4000);
 
-    // Step 3: Consume and process chunks from Kafka
-    let processedChunks = [];
-    await kafkaConfig.consume("resume-topic", async (chunk) => {
-      // Process each chunk individually with OpenAI
-      console.log("chunks are :",chunk);
+    // Initialize an empty JSON structure
+    let currentJson = {
+     header:
+    {  
+      name: "",
+      title:"",
+      email: "",
+      phone: "",
+      linkedin: "",
+      github: "",
+      address: ""
+    }
+      ,
+      summary: "",
+      skills: [],
+      education: [
+        {
+          degree: "",
+          institution: "",
+          graduationYear: "",
+          gpa: ""
+        }
+      ],
+      experience: [
+        {
+          title: "",
+          company: "",
+          duration: "",
+          responsibilities: []
+        }
+      ],
+      projects: [
+        {
+          title: "",
+          technologies: [],
+          description: ""
+        }
+      ],
+      certifications: [],
+      achievements: [],
+      hobbies: "",
+      languages: [],
+      volunteer: ""
+    };
+
+    // Process each chunk iteratively and update JSON
+    for (const chunk of chunks) {
+      
+      // Update the prompt to ask OpenAI to improve the resume content
+      const prompt = `
+        You are a professional resume writer. Your job is to read the following resume content and:
+        1. Improve the quality of the content by rephrasing, making it more impactful, and enhancing its professionalism and also do not summarize the content given from input
+        
+        Here is the current state of the resume JSON:
+        ${JSON.stringify(currentJson)}
+
+       Resume content:
+       "${chunk}"
+       - In the certifications section, ensure certifications are listed as an array of strings, not as objects. Each string should all the information of certification
+      - If the data is not provided leave the field as given
+
+       Based on the above, provide the updated resume in the same JSON format as shown above. Do not add any additional information, formatting, or explanation.
 
       
-      // const completion = await openai.chat.completions.create({
-      //   model: "gpt-4o-mini",
-      //   messages: [
-      //     {
-      //       role: "system",
-      //       content: "You are a professional career advisor and resume writer.",
-      //     },
-      //     {
-      //       role: "user",
-      //       content: `Here is a section of my resume. Improve it to make it professional and ATS-friendly: ${chunk}
+       Do not provide any information other that JSON object
+       exclude any response format(JSON) in output
+      `;
 
-      //        provide the response in below Json format if the data is not present then return null value for the object
-      //         {
-      //           "header": {
-      //             "fullName": "",
-      //             "title": "",
-      //             "email": "",
-      //             "phone": "",
-      //             "linkedin": "",
-      //             "github": "",
-      //             "location": ""
-      //           },
-      //           "summary": "",
-      //           "skills": [],
-      //           "education": [
-      //             {
-      //               "degree": "",
-      //               "institution": "",
-      //               "graduationYear": "",
-      //               "gpa": ""
-      //             }
-      //           ],
-      //           "experience": [
-      //             {
-      //               "title": "",
-      //               "company": "",
-      //               "duration": "",
-      //               "responsibilities": []
-      //             }
-      //           ],
-      //           "projects": [
-      //             {
-      //               "title": "",
-      //               "technologies": [],
-      //               "description": ""
-      //             }
-      //           ],
-      //           "certifications": [],
-      //           "achievements": [],
-      //           "hobbies": "",
-      //           "languages": [],
-      //           "volunteer": ""
-      //         }
-              
-             
-      //       `,
-      //     },
-      //   ],
-      // });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional career advisor and resume writer.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      });
+        // console.log("response",completion.choices[0].message.content)
+      // Update the current JSON with the new response
+      const updatedJson = JSON.parse(completion.choices[0].message.content);
+      // const cleanedJson = cleanJson(updatedJson);
+      // Merge the updated JSON with the current JSON to gradually build the final resume
+      currentJson = mergeJson(currentJson, updatedJson);
+      // console.log("Updated JSON:", currentJson);
+    }
 
-      // const response = completion.choices[0].message.content;
-      // console.log("chunks response",response)
-      // processedChunks.push(response);
-
-      // // If all chunks are processed, finalize the response
-      // if (processedChunks.length === chunks.length) {
-      //   const finalOutput = processedChunks.join("\n");
-
-      //   // Step 4: Make a final request to OpenAI for consolidation
-      //   const finalCompletion = await openai.chat.completions.create({
-      //     model: "gpt-4o-mini",
-      //     messages: [
-      //       {
-      //         role: "system",
-      //         content: "You are a professional career advisor and resume writer.",
-      //       },
-      //       {
-      //         role: "user",
-      //         content: `Consolidate the following improved resume sections into a single professional and ATS-friendly resume:\n${finalOutput}`,
-      //       },
-      //     ],
-      //   });
-
-      //   const finalResponse = finalCompletion.choices[0].message.content;
-     
-        
-      //   // Send the final improved resume to the client
-      //   res.send(finalResponse);
-    // }
-    });
-    res.send(processedChunks)
+    // Send the final JSON response
+    res.json(currentJson);
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Error processing resume" });
   }
 });
+
+
+// Function to merge two JSON objects
 
 
 router.post("/editResume", upload.single("resume"), async (req, res) => {
@@ -160,7 +203,7 @@ router.post("/editResume", upload.single("resume"), async (req, res) => {
               
               {
                 "header": {
-                  "fullName": "",
+                  "name": "",
                   "title": "",
                   "email": "",
                   "phone": "",
@@ -208,7 +251,7 @@ router.post("/editResume", upload.single("resume"), async (req, res) => {
     });
 
     // Extract and return the generated HTML
-    console.log(completion.choices[0].message.content);
+    // console.log(completion.choices[0].message.content);
     res.send(completion.choices[0].message.content);
   } catch (error) {
     console.error("Error with OpenAI request:", error);
