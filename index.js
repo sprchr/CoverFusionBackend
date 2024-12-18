@@ -11,7 +11,10 @@ import controllers from './kfaka/controller.js'
 const app = express();
 app.use(bodyParser.json());
 
-app.use(cors())
+// Allow requests from your frontend origin
+app.use(cors({
+  origin: 'https://wiki-source-ui-ten.vercel.app', // Frontend URL
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
