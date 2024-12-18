@@ -73,7 +73,7 @@ router.post("/resumeBuild", upload.single("resume"), async (req, res) => {
     const fileContent = pdfData.text;
 
     // Split the text into manageable chunks
-    const chunks = splitTextByTokens(fileContent, 4000);
+    const chunks = splitTextByTokens(fileContent, 4500);
 
     // Initialize an empty JSON structure
     let currentJson = {
@@ -126,15 +126,15 @@ router.post("/resumeBuild", upload.single("resume"), async (req, res) => {
       // Update the prompt to ask OpenAI to improve the resume content
       const prompt = `
         You are a professional resume writer. Your job is to read the following resume content and:
-        1. Improve the quality of the content by rephrasing, making it more impactful, and enhancing its professionalism and also do not summarize the content given from input
-        
+        1. Improve the quality of the content by rephrasing, making it more impactful, and enhancing its professionalism and  enchance the given input resume content 
         Here is the current state of the resume JSON:
         ${JSON.stringify(currentJson)}
-
-       Resume content:
-       "${chunk}"
+        
+        Resume content:
+        "${chunk}"
+       - Provide the full explanation or content with as much detail as possible. I don't want a summary but a comprehensive response
        - In the certifications section, ensure certifications are listed as an array of strings, not as objects. Each string should all the information of certification
-      - If the data is not provided leave the field as given
+       - If the data is not provided leave the field as given
 
        Based on the above, provide the updated resume in the same JSON format as shown above. Do not add any additional information, formatting, or explanation.
 

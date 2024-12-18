@@ -1,25 +1,25 @@
 import express from 'express'
 import cors from 'cors'
-import generateCoverLetter from './Apis/GenerateCoverLetter.js'
-import resumeBuild from './Apis/ResumeBuilder.js'
-import editResume from './Apis/ResumeBuilder.js'
-import generatepdf from './Apis/Generatepdf.js'
-import submitForm from './Apis/SubmitForm.js'
+import GenerateCoverLetter from './GenerateCoverLetter.js'
+import resumeBuild from './ResumeBuilder.js'
+import editResume from './ResumeBuilder.js'
+import generatepdf from './Generatepdf.js'
+import submitForm from './SubmitForm.js'
 import bodyParser from 'body-parser'
-import controllers from './kfaka/controller.js'
+import controllers from '../kfaka/controller.js'
 
 const app = express();
 app.use(bodyParser.json());
 
 // Allow requests from your frontend origin
 app.use(cors({
-  origin: 'https://wiki-source-ui-ten.vercel.app'
+  origin: 'https://wiki-source-silk.vercel.app'
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.use('/api', generateCoverLetter);
+app.use('/api', GenerateCoverLetter);
 app.use('/api',resumeBuild)
 app.use('/api',generatepdf)
 app.use('/api',editResume)

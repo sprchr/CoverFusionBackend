@@ -1,6 +1,7 @@
+import Chromium from '@sparticuz/chromium';
 import express from 'express'
 import puppeteer from 'puppeteer';
-import fs from 'fs'
+
 const router = express.Router();
 
 
@@ -37,7 +38,12 @@ router.post('/generatepdf', async (req, res) => {
 
   try {
     // Launch puppeteer browser instance
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      executablePath: await Chromium.executablePath(),
+      args: Chromium.args,
+      headless: Chromium.headless,
+  });
+
   const page = await browser.newPage();
   
     await page.setContent(html, { waitUntil: 'domcontentloaded' });
