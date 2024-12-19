@@ -2,7 +2,8 @@ import express from 'express'
 import multer from 'multer';
 import OpenAI from "openai";
 import dotenv from 'dotenv' 
-
+import { decode, encode } from "gpt-3-encoder";
+import PdfParse from 'pdf-parse';
 
 dotenv.config()
 const upload = multer(); // Initialize multer for file uploads
@@ -13,11 +14,26 @@ const openai = new OpenAI({
 });
 
 
-
+function splitTextByTokens(text, maxTokens) {
+    const tokens = encode(text); // Convert text into tokens
+  
+    // Slice the tokens to get only the first 'maxTokens' tokens
+    const firstChunkTokens = tokens.slice(0, maxTokens);
+  
+    // Decode the first chunk and return it directly
+    return decode(firstChunkTokens);
+  }
+  
  
 router.post('/generateCoverLetter', upload.single('resume'), async (req, res) => {
     const jobDescription = req.body.jobDescription;
-    const resumeFilePath = req.file.buffer
+    const pdfData = await PdfParse(req.file.buffer);
+    const fileContent = pdfData.text;
+    
+    
+    // Split the text into manageable chunks
+    const chunk = splitTextByTokens(fileContent, 10000);
+    // console.log(chunk);
     try {
         
         const completion = await openai.chat.completions.create({
@@ -57,7 +73,7 @@ router.post('/generateCoverLetter', upload.single('resume'), async (req, res) =>
     - Ensure the HTML structure is clean, with proper usage of semantic tags like <header>, <section>, <h1>, <h2>, <h3>, <ul>, <li>, <p> for text, and appropriate <a> tags for links.
  
     Cover letter content:
-    ${resumeFilePath} (resume data)
+    ${chunk} (resume data)
     ${jobDescription} (job description text)
 
     - Do not include any other text like html markers or markdowns other than HTML body and styling in the response.
@@ -68,7 +84,7 @@ router.post('/generateCoverLetter', upload.single('resume'), async (req, res) =>
         });
 
         const responseData = completion.choices[0].message.content;
-        console.log(completion.choices[0].message.content)
+        // console.log(completion.choices[0].message.content)
         res.send(responseData);
     } catch (error) {
         console.error('Error with OpenAI request:', error);

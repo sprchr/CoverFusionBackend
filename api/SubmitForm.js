@@ -21,8 +21,8 @@ router.post("/submitForm", async (req, res) => {
     if (userDocSnap.exists()) {
       // If data exists, merge the new data with the existing document
       const existingData = userDocSnap.data(); // Get current data
-      console.log("Existing Data:", existingData);
-      console.log("New Data:", formData);
+      // console.log("Existing Data:", existingData);
+      // console.log("New Data:", formData);
     
       // Merge the new fields with the existing fields
       const updatedData = {};
@@ -32,7 +32,7 @@ router.post("/submitForm", async (req, res) => {
         }
       }
     
-      console.log("Updated Data:", updatedData);
+      // console.log("Updated Data:", updatedData);
     
       // Update only the necessary fields in Firestore
       await updateDoc(userDocRef, updatedData);
