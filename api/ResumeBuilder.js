@@ -71,78 +71,99 @@ router.post("/resumeBuild", upload.single("resume"), async (req, res) => {
     // Parse the uploaded PDF
     const pdfData = await pdfParse(req.file.buffer);
     const fileContent = pdfData.text;
-
+    // console.log(fileContent);
+    
     // Split the text into manageable chunks
-    const chunks = splitTextByTokens(fileContent, 4500);
+    // const chunks = splitTextByTokens(fileContent, 4500);
 
-    // Initialize an empty JSON structure
-    let currentJson = {
-     header:
-    {  
-      name: "",
-      title:"",
-      email: "",
-      phone: "",
-      linkedin: "",
-      github: "",
-      address: ""
-    }
-      ,
-      summary: "",
-      skills: [],
-      education: [
-        {
-          degree: "",
-          institution: "",
-          graduationYear: "",
-          gpa: ""
-        }
-      ],
-      experience: [
-        {
-          title: "",
-          company: "",
-          duration: "",
-          responsibilities: []
-        }
-      ],
-      projects: [
-        {
-          title: "",
-          technologies: [],
-          description: ""
-        }
-      ],
-      certifications: [],
-      achievements: [],
-      hobbies: "",
-      languages: [],
-      volunteer: ""
-    };
+    // // Initialize an empty JSON structure
+    // let currentJson = {
+    //  header:
+    // {  
+    //   name: "",
+    //   title:"",
+    //   email: "",
+    //   phone: "",
+    //   linkedin: "",
+    //   github: "",
+    //   address: ""
+    // }
+    //   ,
+    //   summary: "",
+    //   skills: [],
+    //   education: [
+    //     {
+    //       degree: "",
+    //       institution: "",
+    //       graduationYear: "",
+    //       gpa: ""
+    //     }
+    //   ],
+    //   experience: [
+    //     {
+    //       title: "",
+    //       company: "",
+    //       duration: "",
+    //       responsibilities: []
+    //     }
+    //   ],
+    //   projects: [
+    //     {
+    //       title: "",
+    //       technologies: [],
+    //       description: ""
+    //     }
+    //   ],
+    //   certifications: [],
+    //   achievements: [],
+    //   hobbies: "",
+    //   languages: [],
+    //   volunteer: ""
+    // };
 
     // Process each chunk iteratively and update JSON
-    for (const chunk of chunks) {
+    // for (const chunk of chunks) {
       
       // Update the prompt to ask OpenAI to improve the resume content
-      const prompt = `
-        You are a professional resume writer. Your job is to read the following resume content and:
-        1. Improve the quality of the content by rephrasing, making it more impactful, and enhancing its professionalism and  enchance the given input resume content 
-        Here is the current state of the resume JSON:
-        ${JSON.stringify(currentJson)}
+      // const prompt = `
+      //   You are a professional resume writer. Your job is to read the following resume content and:
+      //   1. Improve the quality of the content by rephrasing, making it more impactful, and enhancing its professionalism and  enchance the given input resume content 
+      //   Here is the current state of the resume JSON:
+      //   ${JSON.stringify(currentJson)}
         
-        Resume content:
-        "${chunk}"
-       - Provide the full explanation or content with as much detail as possible. I don't want a summary but a comprehensive response
-       - In the certifications section, ensure certifications are listed as an array of strings, not as objects. Each string should all the information of certification
-       - If the data is not provided leave the field as given
-
-       Based on the above, provide the updated resume in the same JSON format as shown above. Do not add any additional information, formatting, or explanation.
+      //   Resume content:
+      //   "${chunk}"
+      //  - Provide the full explanation or content with as much detail as possible. I don't want a summary but a comprehensive response
+      //  - In the certifications section, ensure certifications are listed as an array of strings, not as objects. Each string should all the information of certification
+      //  - If the data is not provided leave the field as given
+      //  - identify company name ,title,project name,duration and sumary from experience Section correctly
+      //  Based on the above, provide the updated resume in the same JSON format as shown above. Do not add any additional information, formatting, or explanation.
 
       
-       Do not provide any information other that JSON object
-       exclude any response format(JSON) in output
-      `;
+      //  Do not provide any information other that JSON object
+      //  exclude any response format(JSON) in output
+      // `;
+     const prompt =  `
+      I want you to act as a professional resume writer. Using the following resume data, create a professional, ATS-friendly resume  in pure HTML syntax. Do **not include any explanation, code blocks, or markdown formatting** such as \`\`\`html\`, just the HTML content for the body of the cover letter. 
+      Follow these specific formatting guidelines:
+     - identify the sections properly from the resume 
+      - Set the font size as follows:
+      - Name: 24px, bold.
+      - Section headers (e.g., Professional Summary, Skills): 16px, bold.
+      - Body text: 14px.
+      - Contact info: 14px.
+      
+      - Line height (line spacing): 1.2 for readability.
+      - Avoid using complicated layouts or tables as they might confuse ATS systems.
+      - Ensure the HTML structure is clean, with proper usage of semantic tags like <header>, <section>, <h1>, <h2>, <h3>, <ul>, <li>, <p> for text, and appropriate <a> tags for links.
+   
+      resume content:
+      ${fileContent} (resume data) 
+      - identify name,title,summary,skills,experience,certitficates,etc properly
+      - In experience section identify all the experiences and include company name,title,project name,duration and summary
 
+      - Do not include any other text like html markers or markdowns other than HTML body and styling in the response.
+      - Make sure to style the cover letter to fit in A4 size and look good when downloaded.`
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
@@ -156,17 +177,17 @@ router.post("/resumeBuild", upload.single("resume"), async (req, res) => {
           },
         ],
       });
-        // console.log("response",completion.choices[0].message.content)
-      // Update the current JSON with the new response
-      const updatedJson = JSON.parse(completion.choices[0].message.content);
-      // const cleanedJson = cleanJson(updatedJson);
-      // Merge the updated JSON with the current JSON to gradually build the final resume
-      currentJson = mergeJson(currentJson, updatedJson);
-      // console.log("Updated JSON:", currentJson);
-    }
+
+      // const updatedJson = JSON.parse(completion.choices[0].message.content);
+
+      // currentJson = mergeJson(currentJson, updatedJson);
+      // console.log(completion.choices[0].message.content);  
+      
+        res.send(completion.choices[0].message.content)
+    // }
 
     // Send the final JSON response
-    res.json(currentJson);
+    // res.json(currentJson);
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ error: "Error processing resume" });
@@ -179,7 +200,7 @@ router.post("/resumeBuild", upload.single("resume"), async (req, res) => {
 
 router.post("/editResume", upload.single("resume"), async (req, res) => {
   const filePath = JSON.stringify(req.body);
-  console.log(filePath);
+  // console.log(filePath);
   try {
     // Call OpenAI API with the file content
     const completion = await openai.chat.completions.create({

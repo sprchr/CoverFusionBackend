@@ -10,15 +10,14 @@ The backend system for the WikiSource platform handles API requests for:
 - Generating PDF files.
 - Creating cover letters.
 - Building and editing resumes.
-- Streaming data using Kafka for processing large inputs with OpenAI.
-- The backend integrates Firebase for user data storage and includes a Dockerized Kafka setup for data streaming.
+- Integrating Firebase for user data storage.
 
 **Tech Stack:**
 
 - **Languages:** Node.js
 - **Frameworks:** Express.js
 - **Services:** Firebase, OpenAI
-- **Tools:** Docker, Kafka, Zookeeper
+- **Tools:** Docker
 
 ## 2. Installation/Setup Instructions
 
@@ -29,7 +28,6 @@ Ensure the following are installed on your system:
 - Node.js
 - Docker
 - Firebase CLI (for managing Firebase)
-- Kafka and Zookeeper (set up via Docker)
 - VS Code (or any code editor)
 
 ### Steps to Set Up the Project
@@ -59,22 +57,15 @@ Ensure the following are installed on your system:
      npm start
      ```
 
-   - Use Docker Compose to set up Kafka and Zookeeper:  
-     ```bash
-     docker-compose up
-     ```
-
 ## 3. Features
 
 - **API Endpoints:**
   - Generate cover letters from user-provided text and file inputs.
-  - Build resumes by processing large files in chunks via Kafka.
+  - Build resumes by processing uploaded files.
   - Edit resumes and make updates dynamically.
   - Generate PDFs for downloading resumes.
-  
-- **Data Streaming:** Kafka streams large amounts of data in chunks to OpenAI for processing.
+
 - **Database Integration:** Firebase Firestore is used to manage user collections.
-- **Dockerized Kafka:** Kafka and Zookeeper are containerized for ease of setup and deployment.
 
 ## 4. Project Structure
 
@@ -85,10 +76,7 @@ root/
 │   ├── resumeBuild.js              # Endpoint to build resumes
 │   ├── editResume.js               # Endpoint to edit resume
 │   └── generatePDF.js              # Endpoint to generate PDF
-├── kafka/
-│   ├── config.js                  # Kafka producer and consumer configuration
-│   └── controller.js              # Logic to send data to Kafka
-├── docker-compose.yml             # Docker setup for Kafka and Zookeeper
+├── docker-compose.yml             # Docker setup
 ├── index.js                       # Main entry point of the application
 ├── firebaseConfig.js              # Firebase configuration file
 ```
@@ -122,14 +110,15 @@ root/
   - A resume file (PDF) uploaded using Multer.
   
 - **Functionality:**
-  - The resume file is parsed and sent in chunks to Kafka.
-  - OpenAI processes the chunks to improve the resume content (currently commented out in code).
+  - The resume file is parsed and processed to improve the resume content.
   
 - **Output:**  
-  - The processed chunks or the final consolidated resume (pending further implementation).
+  - The processed resume.
   
 - **Error Handling:**  
   - A 500 error is returned if resume processing fails.
+
+### 3. **EditResume**
 
 - **Endpoint:** `/editResume`
 - **Request Method:** POST
@@ -145,7 +134,7 @@ root/
 - **Error Handling:**  
   - Returns a 500 error if OpenAI request fails.
 
-### 3. **GeneratePDF**
+### 4. **GeneratePDF**
 
 - **Endpoint:** `/generatepdf`
 - **Request Method:** POST
@@ -162,7 +151,7 @@ root/
 - **Error Handling:**  
   - If an error occurs, a 500 status error is returned with the message: "Error generating PDF."
 
-### 4. **SubmitForm**
+### 5. **SubmitForm**
 
 - **Endpoint:** `/submitForm`
 - **Request Method:** POST
@@ -178,7 +167,7 @@ root/
     ```
 
 - **Functionality:**
-  - The userId is validated and the form data is either merged with existing Firestore data or a new document is created.
+  - The userId is validated, and the form data is either merged with existing Firestore data or a new document is created.
 
 - **Output:**  
   - Success message: `{ "message": "Form submitted successfully to Firestore!", "userId": "12345" }`  
@@ -192,5 +181,3 @@ root/
 - **Resume Page Restriction:**  
   - The system limits resumes to 2-3 pages for PDF generation.
 
-- **Kafka Streaming:**  
-  - Kafka handles large files by dividing them into chunks, sending them to OpenAI for processing to avoid exceeding size limitations.

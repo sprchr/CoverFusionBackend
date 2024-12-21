@@ -13,12 +13,14 @@ app.use(bodyParser.json());
 
 // Allow requests from your frontend origin
 app.use(cors({
-  origin: 'https://wiki-source-ui-ten.vercel.app'
+  origin:'https://wiki-source-ui-ten.vercel.app'
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
+app.get('/', (req, res) => {
+  res.send('Server running');
+});
 app.use('/api', GenerateCoverLetter);
 app.use('/api',resumeBuild)
 app.use('/api',generatepdf)

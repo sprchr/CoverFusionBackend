@@ -2,11 +2,11 @@ import Chromium from '@sparticuz/chromium';
 import express from 'express';
 import puppeteer from 'puppeteer';
 
-const router = express.Router();
+const router = express.Router()
 
 router.post('/generatepdf', async (req, res) => {
     let html;
-    
+
     // Conditional HTML rendering based on the provided data (coverLetter or resumeHtml)
     if (req.body.coverLetter) {
         html = `
@@ -33,7 +33,7 @@ router.post('/generatepdf', async (req, res) => {
                 </body>
             </html>
         `;
-    } else if (req.body.resumeHtml) {
+    } else if (req.body.resume) {
         html = `
             <html>
                 <head>
@@ -45,18 +45,44 @@ router.post('/generatepdf', async (req, res) => {
                             line-height: 1.5;
                         }
                         @page {
-                            margin-top: 5mm; /* Adds space at the top of every page */
+                            margin-top: 5mm;
+                            margin-left:15mm; 
                         }
                     </style>
                     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
                 </head>
                 <body>
                     <div >
-                        ${req.body.resumeHtml}
+                        ${req.body.resume}
                     </div>
                 </body>
             </html>
-        `;
+        `;}
+        else if (req.body.resumeHtml) {
+            html = `
+                <html>
+                    <head>
+                        <style>
+                            body {
+                                margin: 0;
+                                font-family: 'Roboto', sans-serif; /* Added Roboto font */
+                                font-size: 14px;
+                                line-height: 1.5;
+                            }
+                            @page {
+                                margin-top: 5mm;
+                                margin-left:10mm; 
+                            }
+                        </style>
+                        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+                    </head>
+                    <body>
+                        <div >
+                            ${req.body.resumeHtml}
+                        </div>
+                    </body>
+                </html>
+            `;
     }
 
     try {
