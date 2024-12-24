@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 
 // Allow requests from your frontend origin
 app.use(cors({
-  origin:'https://wiki-source-ui-ten.vercel.app'
+  origin:'https://coverfusion.vercel.app'
 }));
 // app.use(cors({
 //   origin:'https://wiki-source-silk.vercel.app'
