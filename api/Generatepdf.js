@@ -8,7 +8,7 @@ router.post('/generatepdf', async (req, res) => {
     let html;
 
     // Conditional HTML rendering based on the provided data (coverLetter or resumeHtml)
-    if (req.body.coverLetter) {
+ 
         html = `
             <html>
                 <head>
@@ -21,69 +21,19 @@ router.post('/generatepdf', async (req, res) => {
                         }
                         @page {
                             margin-top: 10mm; /* Adds space at the top of every page */
-                            margin-left: 5mm
+                            margin-left: 10mm
                         }
                     </style>
                     <link href="https://fonts.google.com/share?selection.family=EB+Garamond:ital,wght@0,400..800;1,400..800|Wendy+One" rel="stylesheet">
                 </head>
                 <body>
                     <div"> 
-                        ${req.body.coverLetter}
+                        ${req.body.resumeHtml}
                     </div>
                 </body>
             </html>
         `;
-    } else if (req.body.resume) {
-        html = `
-            <html>
-                <head>
-                    <style>
-                        body {
-                            margin: 0;
-                            font-family: 'Roboto', sans-serif; /* Added Roboto font */
-                            font-size: 14px;
-                            line-height: 1.5;
-                        }
-                        @page {
-                            margin-top: 5mm;
-                            margin-left:15mm; 
-                        }
-                    </style>
-                    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-                </head>
-                <body>
-                    <div >
-                        ${req.body.resume}
-                    </div>
-                </body>
-            </html>
-        `;}
-        else if (req.body.resumeHtml) {
-            html = `
-                <html>
-                    <head>
-                        <style>
-                            body {
-                                margin: 0;
-                                font-family: 'Roboto', sans-serif; /* Added Roboto font */
-                                font-size: 14px;
-                                line-height: 1.5;
-                            }
-                            @page {
-                                margin-top: 5mm;
-                                margin-left:10mm; 
-                            }
-                        </style>
-                        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-                    </head>
-                    <body>
-                        <div >
-                            ${req.body.resumeHtml}
-                        </div>
-                    </body>
-                </html>
-            `;
-    }
+
 
     try {
         // Launch Puppeteer browser instance
@@ -110,7 +60,7 @@ router.post('/generatepdf', async (req, res) => {
         
         // Send the PDF buffer as the response
         res.send(Buffer.from(pdfBuffer));
-
+         
     } catch (error) {
         console.error('Error generating PDF:', error);
         res.status(500).send('Error generating PDF');

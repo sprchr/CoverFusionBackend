@@ -15,6 +15,9 @@ app.use(bodyParser.json());
 app.use(cors({
   origin:'https://wiki-source-ui-ten.vercel.app'
 }));
+// app.use(cors({
+//   origin:'https://wiki-source-silk.vercel.app'
+// }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
